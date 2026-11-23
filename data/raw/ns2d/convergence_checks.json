@@ -1,0 +1,30 @@
+{
+  "reference_grid": [
+    96,
+    72
+  ],
+  "refined_grid": [
+    128,
+    96
+  ],
+  "time_step": 0.01,
+  "refined_time_step": 0.005,
+  "reference_train_identical": true,
+  "comparisons": [
+    {
+      "time": 2.0,
+      "relative_difference_halved_dt": 6.144422223205629e-07,
+      "relative_difference_refined_grid": 2.3106965182429594e-08
+    },
+    {
+      "time": 4.0,
+      "relative_difference_halved_dt": 4.156743421693835e-06,
+      "relative_difference_refined_grid": 8.579539255568843e-07
+    },
+    {
+      "time": 6.0,
+      "relative_difference_halved_dt": 9.896240521664753e-05,
+      "relative_difference_refined_grid": 0.0019345748470736314
+    }
+  ]
+}

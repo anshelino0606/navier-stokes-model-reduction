@@ -1,0 +1,16 @@
+{
+  "failed_steps": 0.0,
+  "max_picard_iterations": 12.0,
+  "maximum_divergence": 5.826367617742066e-13,
+  "maximum_energy_defect": 3.4816868921009087e-13,
+  "maximum_midpoint_residual": 1.856072009746256e-13,
+  "maximum_relative_update": 9.977816713392122e-13,
+  "integral_energy_defect": -1.944044925039634e-11,
+  "max_saved_high_mode_energy_fraction": 6.113703763916428e-05,
+  "max_saved_divergence": 5.518721354169051e-13,
+  "model_seconds": 5.864521246999971,
+  "steps": 600,
+  "train_end_index": 40,
+  "num_reference_frames": 121,
+  "num_training_frames": 41
+}
