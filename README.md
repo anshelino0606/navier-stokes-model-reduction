@@ -164,14 +164,14 @@ $$
 
 It measures how much of the full-order tendency is not represented by the current reduced space. A large residual indicates that additional basis directions may be needed. This is a residual-based monitoring indicator rather than a rigorous bound on the ROM solution error.
 
-Using the orthonormality of the basis, the residual can be evaluated efficiently:
+Using the orthonormality of the basis, the residual indicator can also be evaluated efficiently using
 
 $$
-\eta_r^2
-=
-F^TMF-\|V_r^TMF\|_2^2,
-\qquad F=F_h(V_ra).
+\eta_r^2 = F^T M F - \left\|V_r^T M F\right\|_2^2,
+\qquad F = F_h(V_r a).
 $$
+
+This avoids explicitly constructing the projection matrix.
 
 ## Snapshot-based enrichment
 
