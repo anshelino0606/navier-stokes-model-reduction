@@ -127,7 +127,6 @@ This is adequate for an initial handoff, but the team should recheck time and gr
 
 All supplied files are Layer A only. Import this module into the shared repository without changing existing B/C code. The handoff fixes the **proposed** `(2,ny,nx)` / flattened-vector interface; confirm signatures at the joint kickoff before teammates start integration. The initial snapshots cover $[0,2]$, and the reference covers $[0,6]$, so B can train on the former and C can evaluate adaptation beyond the training interval. Reuse the entire continuous reference trajectory rather than restarting the FOM separately at $T_0$.
 
-
 # 2D periodic Navier–Stokes: adaptive enrichment (C)
 
 Layer C implements the residual-based monitoring and adaptive basis-enrichment framework for the 2D periodic Navier–Stokes model. It connects the full-order model provided by Layer A with the structure-preserving reduced-order modelling framework developed in Layer B.
@@ -138,55 +137,55 @@ The main objective is to improve reduced-order model accuracy by detecting when 
 
 Let the reduced approximation be
 
-\[
+$$
 u_r=V_ra,
-\]
+$$
 
-where \(V_r\) is an \(M\)-orthonormal, divergence-free reduced basis satisfying
+where $V_r$ is an $M$-orthonormal, divergence-free reduced basis satisfying
 
-\[
+$$
 V_r^TMV_r=I.
-\]
+$$
 
 The unresolved part of the full-order tendency is measured using the residual indicator
 
-\[
+$$
 \eta_r(t)=\left\|(I-P_r)F_h(V_ra)\right\|_M,
 \qquad P_r=V_rV_r^TM.
-\]
+$$
 
 A relative residual indicator is defined as
 
-\[
+$$
 \rho_r(t)=
 \frac{\eta_r(t)}
 {\|F_h(V_ra)\|_M+\varepsilon}.
-\]
+$$
 
 It measures how much of the full-order tendency is not represented by the current reduced space. A large residual indicates that additional basis directions may be needed. This is a residual-based monitoring indicator rather than a rigorous bound on the ROM solution error.
 
 Using the orthonormality of the basis, the residual can be evaluated efficiently:
 
-\[
+$$
 \eta_r^2
 =
 F^TMF-\|V_r^TMF\|_2^2,
 \qquad F=F_h(V_ra).
-\]
+$$
 
 ## Snapshot-based enrichment
 
 When enrichment is required, new full-order snapshots are collected in a matrix
 
-\[
+$$
 S=[u_1,u_2,\ldots,u_m].
-\]
+$$
 
-The existing reduced space is removed using the \(M\)-orthogonal projection:
+The existing reduced space is removed using the $M$-orthogonal projection:
 
-\[
+$$
 S_\perp=(I-P_r)S.
-\]
+$$
 
 New basis directions are extracted from the unresolved snapshot components using two approaches.
 
@@ -194,9 +193,9 @@ New basis directions are extracted from the unresolved snapshot components using
 
 The correlation matrix is
 
-\[
+$$
 C_M=S_\perp^TMS_\perp.
-\]
+$$
 
 Its eigenvalue decomposition provides the mass-orthonormal enrichment modes. This approach prioritises the representation of the velocity field in the mass inner product.
 
@@ -204,34 +203,34 @@ Its eigenvalue decomposition provides the mass-orthonormal enrichment modes. Thi
 
 To incorporate spatial-gradient information, a weighted inner product is introduced:
 
-\[
+$$
 G_\alpha=M+\alpha K,
-\]
+$$
 
-where \(K\) is the stiffness operator and \(\alpha\) controls the contribution of gradients. The corresponding correlation matrix is
+where $K$ is the stiffness operator and $\alpha$ controls the contribution of gradients. The corresponding correlation matrix is
 
-\[
+$$
 C_G=S_\perp^TG_\alpha S_\perp.
-\]
+$$
 
-The eigenvalue decomposition of this matrix provides the energy-informed enrichment modes. These modes are initially orthonormal with respect to \(G_\alpha\). Before being appended to the reduced basis, they are converted to an \(M\)-orthonormal set.
+The eigenvalue decomposition of this matrix provides the energy-informed enrichment modes. These modes are initially orthonormal with respect to $G_\alpha$. Before being appended to the reduced basis, they are converted to an $M$-orthonormal set.
 
 The weighting parameter is scaled using the forcing wavenumber:
 
-\[
+$$
 k_f=\frac{2\pi n_f}{L_y},
 \qquad
 \boxed{
 \alpha=\frac{1}{k_f^2}
 =\left(\frac{L_y}{2\pi n_f}\right)^2.
 }
-\]
+$$
 
-This provides a physically motivated reference length scale. A dimensionless multiplier \(\beta\) can also be introduced:
+This provides a physically motivated reference length scale. A dimensionless multiplier $\beta$ can also be introduced:
 
-\[
+$$
 \alpha=\frac{\beta}{k_f^2},
-\]
+$$
 
 allowing the influence of gradient weighting to be investigated.
 
@@ -239,19 +238,19 @@ allowing the influence of gradient weighting to be investigated.
 
 A rolling mean and standard deviation of the relative residual are used to calculate the standardised residual score:
 
-\[
+$$
 z_r(t)=
 \frac{\rho_r(t)-\mu_\rho}
 {\sigma_\rho+\varepsilon}.
-\]
+$$
 
 Enrichment is triggered when both conditions are satisfied:
 
-\[
+$$
 z_r(t)>z_{\mathrm{threshold}},
 \qquad
 \rho_r(t)>\rho_{\min}.
-\]
+$$
 
 This combines the absolute residual level with its deviation from recent behaviour.
 
@@ -296,15 +295,15 @@ The implementation uses the flattened interfaces provided by Layer A, including 
 
 The flattened velocity vectors have dimension
 
-\[
+$$
 D=2n_xn_y,
-\]
+$$
 
 and snapshot matrices have the shape
 
-\[
-S\in\mathbb R^{D\times n_{\mathrm{snapshots}}}.
-\]
+$$
+S\in\mathbb{R}^{D\times n_{\mathrm{snapshots}}}.
+$$
 
 ## Numerical experiments and evaluation
 
