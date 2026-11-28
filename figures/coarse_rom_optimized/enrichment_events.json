@@ -1,0 +1,26 @@
+[
+  {
+    "time": 5.1,
+    "discrepancy": 0.48110827579735177,
+    "threshold": 0.44999131682207405,
+    "rank_before": 2,
+    "rank_after": 4,
+    "modes_added": 2,
+    "singular_values": [
+      20.65179210215607,
+      5.61108446256693
+    ]
+  },
+  {
+    "time": 5.800000000000001,
+    "discrepancy": 0.4887988527454289,
+    "threshold": 0.44999131682207405,
+    "rank_before": 4,
+    "rank_after": 6,
+    "modes_added": 2,
+    "singular_values": [
+      14.883614111422958,
+      2.4098693188092395
+    ]
+  }
+]

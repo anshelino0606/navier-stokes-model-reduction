@@ -1,0 +1,52 @@
+[
+  {
+    "time": 5.08,
+    "discrepancy": 0.4738389286242231,
+    "threshold": 0.45427265746217704,
+    "rank_before": 2,
+    "rank_after": 4,
+    "modes_added": 2,
+    "singular_values": [
+      24.439802242586964,
+      3.1394432410912434
+    ]
+  },
+  {
+    "time": 5.800000000000001,
+    "discrepancy": 0.5029034341326758,
+    "threshold": 0.45427265746217704,
+    "rank_before": 4,
+    "rank_after": 6,
+    "modes_added": 2,
+    "singular_values": [
+      21.747182750368754,
+      3.007568970645662
+    ]
+  },
+  {
+    "time": 6.32,
+    "discrepancy": 0.7152137675028676,
+    "threshold": 0.45427265746217704,
+    "rank_before": 6,
+    "rank_after": 9,
+    "modes_added": 3,
+    "singular_values": [
+      28.691782518514337,
+      6.260984608355808,
+      2.149046868232082
+    ]
+  },
+  {
+    "time": 7.04,
+    "discrepancy": 0.4588396611439574,
+    "threshold": 0.45427265746217704,
+    "rank_before": 9,
+    "rank_after": 12,
+    "modes_added": 3,
+    "singular_values": [
+      21.58092427632466,
+      5.634190751763503,
+      1.75559623610118
+    ]
+  }
+]

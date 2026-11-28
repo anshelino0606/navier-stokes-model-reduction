@@ -322,231 +322,128 @@ Observations:
 - B. Sanderse, *Non-linearly stable reduced-order models for incompressible flow with energy-conserving finite volume methods*, J. Comput. Phys. 421 (2020) 109736.
 - S. Chaturantabut, C. Beattie, S. Gugercin, *Structure-preserving model reduction for nonlinear port-Hamiltonian systems*, SIAM J. Sci. Comput. 38(5) (2016).
 
-# 2D periodic Navier–Stokes: adaptive enrichment (C)
+# 2D Periodic Navier–Stokes: Adaptive Model Reduction
 
-Layer C implements the residual-based monitoring and adaptive basis-enrichment framework for the 2D periodic Navier–Stokes model. It connects the full-order model provided by Layer A with the structure-preserving reduced-order modelling framework developed in Layer B.
+This project implements adaptive reduced-order modelling (ROM) for the 2D incompressible, periodic Navier–Stokes equations.
 
-The main objective is to improve reduced-order model accuracy by detecting when the current reduced basis no longer adequately represents the flow dynamics and enriching it with additional modes. Two enrichment strategies are considered: standard mass-weighted POD and energy-informed POD.
+The aim is to reduce the computational cost of simulating the flow while maintaining accuracy. The project includes a standard adaptive ROM approach and a coarse-FOM-guided adaptive ROM approach.
 
-## Mathematical formulation
+The framework builds on three main components:
 
-Let the reduced approximation be
+- **Layer A:** Full-order Navier–Stokes solver and spatial discretisation.
+- **Layer B:** Structure-preserving reduced-order modelling, including POD, reduced operators and time integration.
+- **Layer C:** Adaptive monitoring, basis enrichment and coarse-FOM-guided correction.
 
-$$
-u_r=V_ra,
-$$
+## 1. Adaptive ROM
 
-where $V_r$ is an $M$-orthonormal, divergence-free reduced basis satisfying
+The standard adaptive ROM constructs an initial reduced basis from fine-grid training snapshots. During prediction, a residual-based indicator monitors whether the current basis adequately represents the flow dynamics.
 
-$$
-V_r^TMV_r=I.
-$$
+When the indicator exceeds its threshold, additional fine-grid FOM snapshots are collected and used to enrich the reduced basis.
 
-The unresolved part of the full-order tendency is measured using the residual indicator
+The enrichment procedure is:
 
-$$
-\eta_r(t)=\left\|(I-P_r)F_h(V_ra)\right\|_M,
-\qquad P_r=V_rV_r^TM.
-$$
+1. Construct an initial POD basis from training snapshots.
+2. Advance the reduced-order model.
+3. Monitor the residual indicator.
+4. Trigger enrichment when the prescribed threshold is exceeded.
+5. Collect additional fine-grid FOM snapshots.
+6. Remove components already represented by the current basis.
+7. Extract new modes using POD.
+8. Orthogonalise and append the new modes.
+9. Continue the simulation using the enriched basis.
 
-A relative residual indicator is defined as
+This approach provides a baseline for evaluating adaptive basis enrichment. Since it uses fine-grid FOM simulations during enrichment, their computational cost must be included when assessing the overall runtime.
 
-$$
-\rho_r(t)=
-\frac{\eta_r(t)}
-{\|F_h(V_ra)\|_M+\varepsilon}.
-$$
+## 2. Coarse-FOM-guided adaptive ROM
 
-It measures how much of the full-order tendency is not represented by the current reduced space. A large residual indicates that additional basis directions may be needed. This is a residual-based monitoring indicator rather than a rigorous bound on the ROM solution error.
+The coarse-FOM-guided approach uses an independently evolved coarse-grid FOM to monitor and correct the fine-grid ROM.
 
-Using the orthonormality of the basis, the residual indicator can also be evaluated efficiently using
+The coarse model provides information about the flow during prediction without requiring additional fine-grid FOM simulations for every enrichment event.
 
-$$
-\eta_r^2 = F^T M F - \left\|V_r^T M F\right\|_2^2,
-\qquad F = F_h(V_r a).
-$$
+Let the fine-grid ROM approximation be
 
-This avoids explicitly constructing the projection matrix.
+$$u_r = V_r a,$$
 
-## Snapshot-based enrichment
+where $V_r$ is the current reduced basis and $a$ contains the reduced coefficients.
 
-When enrichment is required, new full-order snapshots are collected in a matrix
+The coarse-grid discrepancy is
 
-$$
-S=[u_1,u_2,\ldots,u_m].
-$$
+$$d_c = u_c - R u_r,$$
 
-The existing reduced space is removed using the $M$-orthogonal projection:
+where $u_c$ is the coarse FOM solution and $R$ is the fine-to-coarse restriction operator.
 
-$$
-S_\perp=(I-P_r)S.
-$$
+The discrepancy is transferred to the fine grid using a coarse-to-fine prolongation operator $P$. The resulting information is used to construct enrichment snapshots and update the reduced solution.
 
-New basis directions are extracted from the unresolved snapshot components using two approaches.
+The implementation uses spectral grid-transfer operators rather than simple piecewise-constant interpolation. This avoids introducing artificial high-wavenumber content during prolongation.
 
-**Mass-weighted POD**
+The coarse-FOM-guided workflow is:
 
-The correlation matrix is
+1. Construct an initial fine-grid POD basis from training snapshots.
+2. Initialise the fine-grid ROM and independent coarse-grid FOM.
+3. Advance both models using their respective time steps.
+4. Restrict the fine-grid ROM solution to the coarse grid.
+5. Calculate the coarse-grid discrepancy.
+6. Monitor the discrepancy and compare it with the enrichment threshold.
+7. When enrichment is required, transfer discrepancy information to the fine grid and construct new basis modes.
+8. Update the reduced basis and correction operators.
+9. Continue the simulation with the enriched ROM.
 
-$$
-C_M=S_\perp^TMS_\perp.
-$$
+The purpose of this approach is to use the coarse FOM as an inexpensive guide for adapting the fine-grid reduced model.
 
-Its eigenvalue decomposition provides the mass-orthonormal enrichment modes. This approach prioritises the representation of the velocity field in the mass inner product.
+## 3. Mathematical formulation
 
-**Energy-informed POD**
+The reduced basis is mass-orthonormal:
 
-To incorporate spatial-gradient information, a weighted inner product is introduced:
+$$V_r^T M_f V_r = I,$$
 
-$$
-G_\alpha=M+\alpha K,
-$$
+where $M_f$ is the fine-grid mass matrix.
 
-where $K$ is the stiffness operator and $\alpha$ controls the contribution of gradients. The corresponding correlation matrix is
+For the standard adaptive ROM, the relative residual indicator is
 
-$$
-C_G=S_\perp^TG_\alpha S_\perp.
-$$
+$$\rho_r(t) = \frac{\left\Vert{}(I - V_r V_r^T M_f) F_h(V_r a)\right\Vert{}_{M_f}}{\left\Vert{}F_h(V_r a)\right\Vert{}_{M_f} + \varepsilon}.$$
 
-The eigenvalue decomposition of this matrix provides the energy-informed enrichment modes. These modes are initially orthonormal with respect to $G_\alpha$. Before being appended to the reduced basis, they are converted to an $M$-orthonormal set.
+This indicator measures the part of the full-order tendency that is not represented by the current reduced space. It is used as an adaptive monitoring criterion, not as a rigorous bound on the ROM solution error.
 
-The weighting parameter is scaled using the forcing wavenumber:
+For the coarse-FOM-guided method, the discrepancy is
 
-$$
-k_f=\frac{2\pi n_f}{L_y},
-\qquad
-\boxed{
-\alpha=\frac{1}{k_f^2}
-=\left(\frac{L_y}{2\pi n_f}\right)^2.
-}
-$$
+$$d_c = u_c - R V_r a.$$
 
-This provides a physically motivated reference length scale. A dimensionless multiplier $\beta$ can also be introduced:
+The transferred discrepancy provides information for enrichment and correction of the fine-grid ROM.
 
-$$
-\alpha=\frac{\beta}{k_f^2},
-$$
+The spectral transfer implementation is designed to preserve the resolved coarse-grid content and its mass norm for fields within the coarse spectral band.
 
-allowing the influence of gradient weighting to be investigated.
+## 4. Project structure
 
-## Residual-based enrichment controller
+The main implementation files are organised as follows.
 
-A rolling mean and standard deviation of the relative residual are used to calculate the standardised residual score:
-
-$$
-z_r(t)=
-\frac{\rho_r(t)-\mu_\rho}
-{\sigma_\rho+\varepsilon}.
-$$
-
-Enrichment is triggered when both conditions are satisfied:
-
-$$
-z_r(t)>z_{\mathrm{threshold}},
-\qquad
-\rho_r(t)>\rho_{\min}.
-$$
-
-This combines the absolute residual level with its deviation from recent behaviour.
-
-The controller includes several safeguards:
-
-- A cooldown period between enrichment events.
-- A maximum permitted reduced-basis rank.
-- A maximum number of modes added per event.
-- A relative discarded-energy tolerance for selecting the number of enrichment modes.
-
-These conditions help prevent unnecessary enrichment and excessive basis growth.
-
-## Adaptive ROM workflow
-
-The complete adaptive enrichment procedure consists of the following steps:
-
-1. **Initialisation:** Construct an initial divergence-free, mass-orthonormal POD basis from training snapshots.
-2. **Reduced-order simulation:** Evolve the reduced coefficients using the structure-preserving ROM time integrator.
-3. **Residual monitoring:** Evaluate the relative residual indicator during the simulation.
-4. **Trigger evaluation:** Check the residual thresholds, cooldown period and maximum-rank constraint.
-5. **Snapshot collection:** When enrichment is triggered, obtain additional full-order snapshots over a selected time window.
-6. **Projection:** Remove the components already represented by the current reduced basis.
-7. **Mode extraction:** Compute new modes using mass-weighted POD or energy-informed POD.
-8. **Orthogonalisation:** Ensure that the new modes are mass-orthogonal to the existing basis and to each other.
-9. **Basis update:** Append the accepted modes to the reduced basis.
-10. **Operator update:** Recompute or extend the reduced operators consistently with the updated basis.
-11. **Continuation:** Resume reduced-order time integration using the enriched basis.
-
-This procedure allows the reduced space to adapt to changes in the flow dynamics while maintaining the required mass-orthonormal basis structure.
-
-## Implementation and files
-
-The Layer C implementation is organised as follows:
+### Experiments
 
 | File | Description |
-|---|---|
-| `src/maths/ns2d_ae.py` | Residual monitoring, snapshot projection, mass-POD, energy-POD, orthogonalisation and enrichment-controller utilities |
-| `src/tests/test_ns2d_ae.py` | Tests for residual evaluation, projection, POD orthogonality, enrichment, mode selection and triggering |
-| `src/experiments/ns2d_adaptive.py` | Offline comparison of mass-POD and energy-POD enrichment |
+| --- | --- |
+| `src/experiments/adaptive_rom.py` | Standard residual-based adaptive ROM implementation |
+| `src/experiments/coarse_rom.py` | Coarse-FOM-guided adaptive ROM implementation |
+| `src/experiments/coarse_rom_optimized.py` | Optimised coarse-FOM-guided implementation |
+| `src/experiments/run_adaptive_rom_scaling.py` | Runs and evaluates adaptive ROM scaling experiments |
+| `src/experiments/run_coarse_rom_scaling.py` | Runs and evaluates coarse-FOM-guided ROM scaling experiments |
+| `src/experiments/time_full_fom.py` | Measures full-order model runtime |
 
-The implementation uses the flattened interfaces provided by Layer A, including `F_h_flat`, `apply_M_flat` and `apply_K_flat`.
+### Mathematical components
 
-The flattened velocity vectors have dimension
+| File | Description |
+| --- | --- |
+| `src/maths/ns2d_ae.py` | Residual indicators, snapshot projection, POD enrichment and adaptive utilities |
+| `src/maths/sp_rom_optimized.py` | Optimised structure-preserving ROM implementation |
+| `src/maths/coarse_transfer_patch.py` | Spectral restriction and prolongation operators for coarse/fine grid transfer |
 
-$$
-D=2n_xn_y,
-$$
+The Layer B implementation is provided by `sp_rom_optimized.py`. No separate modified Layer B implementation is required.
 
-and snapshot matrices have the shape
+## 5. Running the experiments
 
-$$
-S\in\mathbb{R}^{D\times n_{\mathrm{snapshots}}}.
-$$
+Run commands from the project root directory with the project environment activated.
 
-## Numerical experiments and evaluation
+### Coarse-FOM-guided adaptive ROM
 
-The enrichment strategies are compared using the same initial reduced basis and the same enrichment snapshots.
-
-The initial basis is constructed using mass-weighted POD. Later snapshots are then used to calculate additional modes using either mass-weighted POD or energy-informed POD.
-
-The current offline experiment evaluates the enrichment procedures and saves the resulting bases, modes and eigenvalues for further analysis.
-
-The broader evaluation of the adaptive ROM considers:
-
-- **Approximation accuracy:** How well the reduced basis represents the full-order velocity snapshots.
-- **Energy behaviour:** Whether the reduced model preserves the expected kinetic-energy behaviour.
-- **Dissipation:** How accurately the reduced model represents viscous dissipation.
-- **Gradient representation:** Whether energy-informed enrichment improves the representation of spatial gradients.
-- **Basis dimension:** The number of modes required to achieve a given approximation quality.
-- **Computational cost:** The computational expense of the reduced simulation, including enrichment and operator updates.
-
-The main objective is to determine whether adaptive enrichment improves the accuracy and robustness of the reduced model without requiring an unnecessarily large basis.
-
-## Testing and execution
-
-Run the adaptive enrichment tests from the project root:
+Example on a $384 \times 288$ fine grid, using a coarse-grid factor of 4:
 
 ```bash
-PYTHONPATH=src python -m pytest src/tests/test_ns2d_ae.py -v
-```
-
-Run the offline enrichment experiment:
-
-```bash
-PYTHONPATH=src python -m experiments.ns2d_adaptive
-```
-
-The default experiment uses the first half of the training snapshots to construct the initial basis and the remaining half for enrichment. This split can be adjusted using `--initial-fraction`.
-
-The experiment saves its results to:
-
-```text
-data/results/ns2d/adaptive.npz
-```
-
-## Integration with the other project layers
-
-Layer C forms the adaptive component of the complete structure-preserving model reduction framework:
-
-- **Layer A:** Provides the full-order Navier–Stokes solver, discretisation, snapshots and mass and stiffness operators.
-- **Layer B:** Provides the reduced-order formulation, reduced operators, time integration and basis-update functionality.
-- **Layer C:** Provides residual monitoring, enrichment decisions, new basis construction and adaptive control.
-
-Together, the three layers provide a framework for adaptive structure-preserving model order reduction of the 2D incompressible Navier–Stokes equations. The framework combines efficient reduced-order simulation with residual-based detection of unresolved dynamics and controlled enrichment of the reduced basis.
+python src/experiments/run_coarse_rom_scaling.py --nx 384 --ny 288 --dt 0.01 --dt-coarse 0.04 --coarse-factor 4 --check-every 4
